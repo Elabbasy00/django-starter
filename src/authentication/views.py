@@ -3,7 +3,9 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_jwt.views import ObtainJSONWebTokenView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+)
 from src.users.selectors import user_get_login_data
 from src.authentication.services import auth_logout
 from src.api.mixins import ApiAuthMixin
@@ -42,14 +44,22 @@ class UserSessionLogoutApi(ApiAuthMixin, APIView):
         return Response()
 
 
-class UserJwtLoginApi(ObtainJSONWebTokenView):
+class UserJwtLoginApi(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         # We are redefining post so we can change the response status on success
         # Mostly for consistency with the session-based API
         response = super().post(request, *args, **kwargs)
-
         if response.status_code == status.HTTP_201_CREATED:
             response.status_code = status.HTTP_200_OK
+
+        if settings.SIMPLE_JWT["JWT_AUTH_COOKIE"] is not None:
+            response.set_cookie(
+                key=settings.SIMPLE_JWT["JWT_AUTH_COOKIE"],
+                value=response.data.get("access"),
+                expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                secure=settings.SIMPLE_JWT["JWT_AUTH_COOKIE_SECURE"],
+                samesite=settings.SIMPLE_JWT["JWT_AUTH_COOKIE_SAMESITE"],
+            )
 
         return response
 
@@ -60,8 +70,8 @@ class UserJwtLogoutApi(ApiAuthMixin, APIView):
 
         response = Response()
 
-        if settings.JWT_AUTH["JWT_AUTH_COOKIE"] is not None:
-            response.delete_cookie(settings.JWT_AUTH["JWT_AUTH_COOKIE"])
+        if settings.SIMPLE_JWT["JWT_AUTH_COOKIE"] is not None:
+            response.delete_cookie(settings.SIMPLE_JWT["JWT_AUTH_COOKIE"])
 
         return response
 

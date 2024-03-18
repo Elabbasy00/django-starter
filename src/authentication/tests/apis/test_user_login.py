@@ -18,7 +18,7 @@ class UserSessionLoginTests(TestCase):
     def test_non_existing_user_cannot_login(self):
         self.assertEqual(0, User.objects.count())
 
-        data = {"username": "el", "email": "test@gmail.com", "password": "123456789aA"}
+        data = {"username": "el", "email": "el@gmail.com", "password": "123456"}
 
         response = self.client.post(self.session_login_url, data)
 
@@ -96,7 +96,7 @@ class UserJwtLoginTests(TestCase):
 
         response = self.client.post(self.jwt_login_url, data)
 
-        self.assertEqual(400, response.status_code)
+        self.assertEqual(401, response.status_code)
 
     def test_existing_user_can_login_and_access_apis(self):
         """
@@ -114,10 +114,10 @@ class UserJwtLoginTests(TestCase):
         self.assertEqual(200, response.status_code)
 
         data = response.data
-        self.assertIn("token", data)
-        token = data["token"]
+        self.assertIn("access", data)
+        token = data["access"]
 
-        jwt_cookie = response.cookies.get(settings.JWT_AUTH["JWT_AUTH_COOKIE"])
+        jwt_cookie = response.cookies.get(settings.SIMPLE_JWT["JWT_AUTH_COOKIE"])
 
         self.assertEqual(token, jwt_cookie.value)
 
@@ -130,7 +130,8 @@ class UserJwtLoginTests(TestCase):
         response = client.get(self.me_url)
         self.assertEqual(403, response.status_code)
 
-        auth_headers = {"HTTP_AUTHORIZATION": f"{settings.JWT_AUTH['JWT_AUTH_HEADER_PREFIX']} {token}"}
+        auth_headers = {"HTTP_AUTHORIZATION": f"{settings.SIMPLE_JWT['AUTH_HEADER_TYPES'][0]} {token}"}
+
         response = client.get(self.me_url, **auth_headers)
         self.assertEqual(200, response.status_code)
 

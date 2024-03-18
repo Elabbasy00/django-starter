@@ -15,8 +15,9 @@ THIRD_PARTY_APPS = [
     "django_celery_beat",
     "django_filters",
     "corsheaders",
-    "rest_framework_jwt",
-    "rest_framework_jwt.blacklist",
+    # "rest_framework_jwt",
+    # "rest_framework_jwt.blacklist",
+    "rest_framework_simplejwt",
 ]
 
 INSTALLED_APPS = [
@@ -111,7 +112,9 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "src.api.exception_handlers.drf_custom_exception_handler",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_jwt.authentication.JSONWebTokenAuthentication",
+        # "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "src.api.mixins.CustomAuthentication",
+        # "rest_framework_jwt.authentication.JSONWebTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ),

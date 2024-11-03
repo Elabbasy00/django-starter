@@ -47,9 +47,6 @@ class User(AbstractUser, PermissionsMixin):
 
     is_staff = models.BooleanField(default=False)
 
-    # This should potentially be an encrypted field
-    jwt_key = models.UUIDField(default=uuid.uuid4)
-
     USERNAME_FIELD = "username"
 
     REQUIRED_FIELDS = ["email"]

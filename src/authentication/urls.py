@@ -6,6 +6,8 @@ from .views import (
     UserMeApi,
     UserSessionLoginApi,
     UserSessionLogoutApi,
+    ChangePassword,
+    CreateUser,
 )
 
 urlpatterns = [
@@ -34,4 +36,7 @@ urlpatterns = [
         ),
     ),
     path("me/", UserMeApi.as_view(), name="me"),
+    path("change_password/", ChangePassword.as_view(), name="change_password"),
+    path("registration/", CreateUser.as_view(), name="registration"),
+    path("password_reset/", include("django_rest_passwordreset.urls", namespace="password_reset")),
 ]

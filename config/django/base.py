@@ -18,6 +18,7 @@ THIRD_PARTY_APPS = [
     # "rest_framework_jwt",
     # "rest_framework_jwt.blacklist",
     "rest_framework_simplejwt",
+    "django_rest_passwordreset",
 ]
 
 INSTALLED_APPS = [
@@ -131,5 +132,6 @@ from config.settings.debug_toolbar.settings import *
 from config.settings.session import *
 from config.settings.jwt import *
 from config.settings.debug_toolbar.setup import DebugToolbarSetup
+from config.settings.email import *
 
 INSTALLED_APPS, MIDDLEWARE = DebugToolbarSetup.do_settings(INSTALLED_APPS, MIDDLEWARE)

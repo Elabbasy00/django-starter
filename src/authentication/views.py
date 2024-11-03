@@ -7,8 +7,29 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
 )
 from src.users.selectors import user_get_login_data
-from src.authentication.services import auth_logout
 from src.api.mixins import ApiAuthMixin
+from rest_framework import serializers
+from src.users.services import user_update, user_create
+from django.contrib.auth import password_validation
+from django.utils.translation import gettext_lazy as _
+from rest_framework.permissions import AllowAny
+
+
+class CreateUser(AllowAny, APIView):
+    class InputSerializer(serializers.Serializer):
+        first_name = serializers.CharField()
+        last_name = serializers.CharField()
+        username = serializers.CharField()
+        email = serializers.EmailField()
+        phone_number = serializers.CharField()
+        password = serializers.CharField()
+
+    def post(self, request):
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = user_create(**serializer.validated_data)
+        return Response({"user created"})
 
 
 class UserSessionLoginApi(APIView):
@@ -45,10 +66,12 @@ class UserSessionLogoutApi(ApiAuthMixin, APIView):
 
 
 class UserJwtLoginApi(TokenObtainPairView):
+
     def post(self, request, *args, **kwargs):
         # We are redefining post so we can change the response status on success
         # Mostly for consistency with the session-based API
         response = super().post(request, *args, **kwargs)
+
         if response.status_code == status.HTTP_201_CREATED:
             response.status_code = status.HTTP_200_OK
 
@@ -66,7 +89,6 @@ class UserJwtLoginApi(TokenObtainPairView):
 
 class UserJwtLogoutApi(ApiAuthMixin, APIView):
     def post(self, request):
-        auth_logout(request.user)
 
         response = Response()
 
@@ -77,7 +99,53 @@ class UserJwtLogoutApi(ApiAuthMixin, APIView):
 
 
 class UserMeApi(ApiAuthMixin, APIView):
+    class InputSerializer(serializers.Serializer):
+        first_name = serializers.CharField()
+        last_name = serializers.CharField()
+        email = serializers.EmailField()
+        phone_number = serializers.CharField()
+
     def get(self, request):
         data = user_get_login_data(user=request.user)
 
         return Response(data)
+
+    def post(self, request):
+
+        serializer = self.InputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = user_update(user=request.user, **serializer.validated_data)
+        data = user_get_login_data(user=user)
+        return Response(data)
+
+
+class ChangePassword(ApiAuthMixin, APIView):
+    class InputSerializer(serializers.Serializer):
+        old_password = serializers.CharField()
+        password1 = serializers.CharField()
+        password2 = serializers.CharField()
+
+        def validate_old_password(self, value):
+
+            user = self.context["request"].user
+            if not user.check_password(value):
+                raise serializers.ValidationError(
+                    _("Your old password was entered incorrectly. Please enter it again.")
+                )
+            return value
+
+        def validate(self, data):
+            if data["password1"] != data["password2"]:
+                raise serializers.ValidationError({"password2": _("The two password fields didn't match.")})
+
+            password_validation.validate_password(data["password1"], self.context["request"].user)
+            return data
+
+    def post(self, request):
+
+        serializer = self.InputSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        password = serializer.validated_data.get("password1")
+        request.user.set_password(password)
+        request.user.save()
+        return Response({"Password Changed"})
